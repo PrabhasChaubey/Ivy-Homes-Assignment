@@ -200,6 +200,3 @@ The findings list records the discrepancies reproduced against the live API, inc
 
 The assignment explicitly rewards precision in findings, so the repository avoids turning weak signals into claims.
 
-## What I would do with another two days
-
-I would add automated contract/regression tests for authentication, refresh, pagination, missing endpoints, completeness, and unit interpretation. On the frontend I would add browser E2E tests covering login-refresh persistence, saved listings across re-login, listing-detail URLs, filters, and error states. I would also replace the current property-deduplication heuristic with a stronger multi-signal matcher, improve accessibility coverage, and add client-side caching so the full dataset is not unnecessarily refetched.

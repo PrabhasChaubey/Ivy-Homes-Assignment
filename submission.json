@@ -1,0 +1,287 @@
+{
+  "api_key": "IVY26-EF24353F4786",
+  "candidate": {
+    "name": "Prabhas Kumar Chaubey",
+    "email": "prabhas.20235056@mnnit.ac.in",
+    "repo_url": "https://github.com/PrabhasChaubey/Ivy-Homes-Assignment",
+    "demo_url": "https://ivy-homes-assignment-ten.vercel.app/"
+  },
+  "answers": {
+    "total_listing_records": 4100,
+    "unique_properties": 4075,
+    "active_listings": 3233,
+    "corrupt_listing_ids": [
+      "100-4000397",
+      "100-4000449",
+      "100-4000457",
+      "100-4000491",
+      "100-4000738",
+      "100-4001484",
+      "100-4001961",
+      "100-4002832",
+      "100-4002961",
+      "DWE-4000412",
+      "DWE-4000745",
+      "DWE-4000891",
+      "DWE-4001424",
+      "DWE-4001442",
+      "DWE-4002045",
+      "DWE-4002247",
+      "DWE-4002374",
+      "DWE-4002712",
+      "DWE-4003067",
+      "MAG-4000075",
+      "MAG-4000145",
+      "MAG-4000283",
+      "MAG-4000870",
+      "MAG-4000883",
+      "MAG-4001467",
+      "MAG-4001981",
+      "MAG-4002092",
+      "MAG-4002491",
+      "MAG-4002776",
+      "MAG-4003100",
+      "SQU-4000224",
+      "SQU-4000308",
+      "SQU-4000583",
+      "SQU-4001225",
+      "SQU-4001342",
+      "SQU-4001601",
+      "SQU-4002483",
+      "ZER-4000021",
+      "ZER-4000995",
+      "ZER-4001161",
+      "ZER-4001287",
+      "ZER-4001669",
+      "ZER-4001686",
+      "ZER-4001844",
+      "ZER-4002683"
+    ],
+    "total_monthly_rent": 5522600,
+    "avg_price_per_sqft_2bhk": 9840.78,
+    "costliest_project": {
+      "project_id": "P40231",
+      "price_max_inr": 998000000
+    },
+    "listings_last_7_days": 122,
+    "fake_listing_ids": [
+      "100-4003487",
+      "DWE-4003375"
+    ],
+    "projects_with_wrong_listing_count": 119
+  },
+  "findings": [
+    {
+      "endpoint": "*",
+      "category": "auth",
+      "documented": "The API key is sent as the ?api_key= query parameter.",
+      "actual": "The API requires the key in the X-API-Key request header.",
+      "how_found": "An authenticated collection request using the documented query parameter returned 401 with an instruction to send the key in the X-API-Key header; retrying with that header succeeded.",
+      "impact": "Client requests must send X-API-Key rather than relying on the documented query parameter.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/auth/login",
+      "category": "auth",
+      "documented": "Login requires email and password in the request body.",
+      "actual": "Login also requires the X-API-Key request header.",
+      "how_found": "The first login attempt returned 401 missing X-API-Key header; adding the header made login succeed.",
+      "impact": "The login client must include the API key even though the login body alone appears sufficient in the documentation.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/auth/login",
+      "category": "auth",
+      "documented": "The response contains token and tokens are valid for 24 hours; there is no refresh flow.",
+      "actual": "The response uses access_token, includes refresh_token and refresh_url=/auth/refresh, and expires_in is 900 seconds (15 minutes). The /auth/refresh flow accepts refresh_token and returns the same token shape.",
+      "how_found": "The raw login response was inspected and the refresh endpoint was tested directly.",
+      "impact": "A frontend must refresh the session during a 30-minute session instead of assuming one login remains valid.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/listings, /v1/rentals, /v1/projects",
+      "category": "pagination",
+      "documented": "Pagination is page-based and page is incremented starting at 1.",
+      "actual": "The page parameter is ignored. Offset is the real pagination mechanism.",
+      "how_found": "Multiple requests with changing page/skip/cursor-like parameters returned the same first window; changing offset returned a genuinely different window.",
+      "impact": "Using the documented page parameter cannot retrieve the complete dataset.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/listings, /v1/rentals, /v1/projects",
+      "category": "pagination",
+      "documented": "limit may be requested up to 200 records per page.",
+      "actual": "The server returns at most 50 records per request, even when limit=200 is requested.",
+      "how_found": "Requests using limit=200 consistently returned 50-record result windows.",
+      "impact": "Clients must paginate in 50-record steps.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/listings, /v1/rentals, /v1/projects",
+      "category": "completeness",
+      "documented": "total is the exact number of matching records.",
+      "actual": "The declared totals undercount the retrievable dataset: listings 3879 vs 4100, rentals 1466 vs 1550, projects 435 vs 460.",
+      "how_found": "The client was changed to stop only when a genuinely empty offset page was returned rather than trusting total; the final page traversal produced the larger counts.",
+      "impact": "Trusting total causes incomplete answers; Q1/Q5/Q10 and any full-dataset analysis must use end-of-data pagination.",
+      "evidence": [
+        "MAG-4000338",
+        "MAG-4001947",
+        "100-4002889",
+        "100-4002208",
+        "DWE-4001802",
+        "ZER-4001081",
+        "DWE-4003376",
+        "100-4003544",
+        "MAG-4002871",
+        "SQU-4001103",
+        "P40436",
+        "P40437",
+        "P40438",
+        "P40439",
+        "P40440",
+        "P40441",
+        "P40442",
+        "P40443",
+        "P40444",
+        "P40445"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "duplicates",
+      "documented": "Each listing corresponds to exactly one physical property and listing IDs are distinct records.",
+      "actual": "At least some records represent the same physical property across listing sources; a deterministic clustering pass found 25 multi-record clusters among 4100 listings.",
+      "how_found": "Clustered listings using rounded latitude/longitude, bedroom count, and carpet area, then manually inspected representative clusters. For example, ZER-4003993 and ZER-4002843 both refer to Sobha Serenity with matching location/bedroom/area characteristics and slightly different prices.",
+      "impact": "The unique-property answer cannot be obtained by simply counting listing records; cross-source deduplication is required.",
+      "evidence": [
+        "ZER-4003993",
+        "ZER-4002843"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "completeness",
+      "documented": "The listings endpoint returns active listings only.",
+      "actual": "The response contains an undocumented is_live field and includes 867 records with is_live=false; 3233 have is_live=true.",
+      "how_found": "All returned listing objects were inspected for fields and is_live was counted across the full 4100-record dataset.",
+      "impact": "The frontend cannot assume every /v1/listings record is active; it filters is_live=true for active listings.",
+      "evidence": [
+        "ZER-4003897",
+        "DWE-4002021",
+        "MAG-4001946",
+        "MAG-4000811",
+        "DWE-4001531"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "data_quality",
+      "documented": "Listing records contain physically meaningful price, area, floor, and bedroom values.",
+      "actual": "45 listing records contain values that cannot describe a plausible built property, including non-positive prices, floor numbers above total floors, carpet area above super-built-up area, non-positive bedroom counts on non-land records, or implausibly low price-per-square-foot values.",
+      "how_found": "Applied explicit physical-consistency checks to the complete 4100-record dataset and manually reviewed the resulting candidate set before using it for Q4.",
+      "impact": "Those 45 records are excluded from the Q6 2-BHK price-per-square-foot calculation and reported as Q4 corrupt listing IDs.",
+      "evidence": [
+        "100-4000397",
+        "100-4000449",
+        "100-4000457",
+        "100-4000491",
+        "100-4000738",
+        "DWE-4000412",
+        "DWE-4000891",
+        "DWE-4001424",
+        "DWE-4002045",
+        "DWE-4002374",
+        "MAG-4000075",
+        "MAG-4000145",
+        "MAG-4000870",
+        "MAG-4001981",
+        "MAG-4002092",
+        "MAG-4002491",
+        "MAG-4002776",
+        "MAG-4003100",
+        "SQU-4000308",
+        "SQU-4001225"
+      ]
+    },
+    {
+      "endpoint": "/v1/projects",
+      "category": "units",
+      "documented": "price_min and price_max are in rupees.",
+      "actual": "The project price fields are recorded in crores; P40231 has price_max=99.8, which corresponds to \u20b9998,000,000.",
+      "how_found": "The full price_max distribution was 1.01/1.46/1.87/2.4/99.8, which is consistent with crore-scale values rather than rupees; the maximum was then converted by 1e7.",
+      "impact": "Q7 must convert the project price_max value from crores to rupees.",
+      "evidence": [
+        "P40231"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "units",
+      "documented": "Listing carpet_area and super_built_up_area are measured in square feet.",
+      "actual": "326 individual listing records have both area fields at sizes consistent with square metres; converting those records by 10.7639 makes their dimensions plausible. This is a per-record issue, not a source-wide website bug.",
+      "how_found": "The source-level carpet/super ratios were healthy across all five website prefixes (~0.75-0.76), which disproved a source-wide units hypothesis. A per-record absolute-area check then isolated 326 records.",
+      "impact": "Area calculations need a per-record units correction before Q4/Q6 analysis.",
+      "evidence": [
+        "MAG-4003885",
+        "MAG-4002264",
+        "MAG-4003492",
+        "MAG-4000039",
+        "MAG-4002824",
+        "MAG-4000785",
+        "MAG-4000126",
+        "MAG-4002552",
+        "MAG-4000756",
+        "MAG-4003260",
+        "MAG-4001373",
+        "MAG-4000739",
+        "MAG-4003140",
+        "MAG-4001003",
+        "MAG-4003464",
+        "MAG-4001884",
+        "MAG-4000683",
+        "MAG-4001106",
+        "MAG-4002993",
+        "MAG-4003585"
+      ]
+    },
+    {
+      "endpoint": "/v1/favourites",
+      "category": "missing_endpoint",
+      "documented": "GET/POST/DELETE /v1/favourites provides saved listings.",
+      "actual": "The documented endpoint and tested method/path variants return 404 Not Found; no server-side favourites endpoint exists at the documented path.",
+      "how_found": "GET, POST, DELETE and plausible path/method variants were tested directly against the live API.",
+      "impact": "Saved listings were implemented client-side, keyed by logged-in user email in localStorage, so they still persist across reload and re-login.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/analytics/summary",
+      "category": "missing_endpoint",
+      "documented": "GET /v1/analytics/summary returns pre-computed analytics aggregates.",
+      "actual": "The endpoint returns 404 Not Found on the tested path variants.",
+      "how_found": "Direct GET requests were made against the documented path and plausible variants.",
+      "impact": "The Insights page computes analytics client-side from the verified listing dataset instead of depending on a dead endpoint.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/health",
+      "category": "timestamps",
+      "documented": "Timestamps use UTC Z format everywhere.",
+      "actual": "health.server_time is returned with an explicit +05:30 offset, while listing posted_at values use Z/UTC.",
+      "how_found": "The health response and listing timestamp samples were inspected directly.",
+      "impact": "Timestamp parsing should honor the actual offset rather than assuming every endpoint uses the documented Z suffix.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "fraud",
+      "documented": "Listing descriptions represent genuine property listings.",
+      "actual": "Two listing records reuse the exact same description text while being separate listing records with different listing IDs and prices.",
+      "how_found": "Normalized exact-description matching across all 4100 listings found one description text reused twice; the matching records were DWE-4003375 and 100-4003487.",
+      "impact": "These two records are reported as the narrow Q9 fake-listing set rather than treating broader shared-phone clusters as automatically fraudulent.",
+      "evidence": [
+        "DWE-4003375",
+        "100-4003487"
+      ]
+    }
+  ]
+}

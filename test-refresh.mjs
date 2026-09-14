@@ -3,6 +3,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+
 const BASE_URL = process.env.IVY_BASE_URL;
 const API_KEY = process.env.IVY_API_KEY;
 

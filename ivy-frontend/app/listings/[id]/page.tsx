@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useRequireAuth, useAuth } from "@/lib/auth-context";
-import { fetchListing } from "@/lib/api";
+import { getAllListings } from "@/lib/data";
 import { formatINR } from "@/lib/data";
 import { isFavourite, addFavouriteLocal, removeFavouriteLocal } from "@/lib/favourites";
 
@@ -17,7 +17,20 @@ export default function ListingDetailPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchListing(id).then(setListing).catch((e) => setError(e.message));
+    getAllListings()
+      .then((listings) => {
+        const found = listings.find(
+          (l) => l.listing_id === id
+        );
+
+        if (!found) {
+          setError("Listing not found");
+          return;
+        }
+
+        setListing(found);
+      })
+      .catch((e) => setError(String(e)));
   }, [id]);
 
   useEffect(() => {

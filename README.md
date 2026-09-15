@@ -29,8 +29,6 @@ IVY Assignment/
 ├── test-pagination.mjs           # Pagination behavior checks
 ├── test-refresh.mjs              # Refresh-token contract check
 ├── output.txt                    # Captured analysis output
-├── HYPOTHESES.md                 # Investigation checklist
-├── API_REFERENCE.md              # Supplied API documentation
 ├── data/                          # JSON output from the investigation
 ├── submission.json               # Assignment answers + API findings
 └── README.md                     # This file
